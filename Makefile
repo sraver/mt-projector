@@ -1,6 +1,11 @@
 
 current_dir := $(dir $(abspath $(lastword $(MAKEFILE_LIST))))
 
+# Install
+
+install:
+	pip install -r requirements.txt
+
 # Up & Down
 
 run-mysql:
