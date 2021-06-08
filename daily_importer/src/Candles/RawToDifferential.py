@@ -30,7 +30,9 @@ class RawToDifferential:
             diff_ema50 = ema50 - current_candle.close()
             diff_ema200 = ema200 - current_candle.close()
 
-            differential_candle = DifferentialCandle(datetime, diff_close, diff_high, diff_low, diff_ema50, diff_ema200)
+            differential_candle = DifferentialCandle(
+                datetime, previous_close, diff_close, diff_high, diff_low, diff_ema50, diff_ema200
+            )
             array_differential_candles.append(differential_candle)
 
         return DifferentialCandles(pair, array_differential_candles)

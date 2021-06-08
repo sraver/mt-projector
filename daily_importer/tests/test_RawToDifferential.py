@@ -65,16 +65,16 @@ class TestRawToDifferential(TestCase):
         array = diff_candles.array()
 
         first_candle = array[0]
-        self.assertEqual(500, first_candle.close())
-        self.assertEqual(750, first_candle.high())
-        self.assertEqual(-50, first_candle.low())
+        self.assertEqual(500, first_candle.close_difference())
+        self.assertEqual(750, first_candle.high_difference())
+        self.assertEqual(-50, first_candle.low_difference())
 
         second_candle = array[1]
-        self.assertEqual(1000, second_candle.close())
-        self.assertEqual(1200, second_candle.high())
-        self.assertEqual(-100, second_candle.low())
+        self.assertEqual(1000, second_candle.close_difference())
+        self.assertEqual(1200, second_candle.high_difference())
+        self.assertEqual(-100, second_candle.low_difference())
 
         third_candle = array[2]
-        self.assertEqual(2000, third_candle.close())
-        self.assertEqual(2300, third_candle.high())
-        self.assertEqual(-500, third_candle.low())
+        self.assertEqual(2000, third_candle.close_difference())
+        self.assertEqual(2300, third_candle.high_difference())
+        self.assertEqual(-500, third_candle.low_difference())
