@@ -1,29 +1,30 @@
 import sys
-
-from src.Candles.RawToDifferential import RawToDifferential
-from src.Repositories.Finance import Finance
+from src.Candles.SourceToNormalized import SourceToNormalized
 from src.Persistence.Database import Database
-from src.Repositories.RawCandlesRepository import RawCandlesRepository
+from src.Repositories.NormalizedCandlesRepository import NormalizedCandlesRepository
+from src.Repositories.SourceCandlesRepository import SourceCandlesRepository
 
 if len(sys.argv) < 3:
     print("Need to specify the pair you want to fetch and the timeframe")
     exit()
 
-sys.setrecursionlimit(1000000)
-
 pair = sys.argv[1]
 timeframe = sys.argv[2]
 
 db = Database()
-raw_candles_repository = RawCandlesRepository(db)
+source_candles_repository = SourceCandlesRepository(db)
+normal_candles_repository = NormalizedCandlesRepository(db)
 
 # Load raw data
 
-raw_candles = raw_candles_repository.get(pair, timeframe)
+source_candles = source_candles_repository.get(pair, timeframe)
 
 # Convert to differentials
 
-converter = RawToDifferential(raw_candles)
-diff_candles = converter.convert()
+converter = SourceToNormalized(source_candles)
+normal_candles = converter.convert()
 
-print(len(diff_candles.array()))
+# Store
+normal_candles_repository.store(pair, timeframe, normal_candles)
+
+
