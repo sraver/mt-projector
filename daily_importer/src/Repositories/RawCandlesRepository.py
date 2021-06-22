@@ -25,8 +25,8 @@ class RawCandlesRepository:
 
     def get(self, pair, timeframe) -> RawCandles:
         rs = self.__db.execute(
-            '''SELECT date, open, close, high, low, volume FROM raw_data
-                WHERE asset = %s AND timeframe = %s''',
+            '''SELECT datetime, open, close, high, low, rsi, ema50, ema200, ema800, volume FROM raw_data
+                WHERE asset = %s AND period = %s''',
             (pair, timeframe)
         )
         arr = []
@@ -36,7 +36,11 @@ class RawCandlesRepository:
             close = row[2]
             high = row[3]
             low = row[4]
-            volume = row[5]
-            raw_candle = RawCandle(datetime, open, high, low, close, volume)
+            rsi = row[5]
+            ema50 = row[5]
+            ema200 = row[6]
+            ema800 = row[7]
+            volume = row[8]
+            raw_candle = RawCandle(datetime, open, high, low, close, rsi, ema50, ema200, ema800, volume)
             arr.append(raw_candle)
         return RawCandles(pair, arr)

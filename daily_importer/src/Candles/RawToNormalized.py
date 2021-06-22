@@ -1,10 +1,10 @@
-from src.Candles.Source.SourceCandles import SourceCandles
+from src.Candles.Raw.RawCandles import RawCandles
 from src.Candles.Normalized.NormalizedCandle import NormalizedCandle
 from src.Candles.Normalized.NormalizedCandles import NormalizedCandles
 
 
-class SourceToNormalized:
-    def __init__(self, candles: SourceCandles):
+class RawToNormalized:
+    def __init__(self, candles: RawCandles):
         self.__rawCandles = candles
 
     def convert(self) -> NormalizedCandles:
