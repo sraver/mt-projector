@@ -69,18 +69,19 @@ for i in range(batch_size, set_size):
     target_element = arr_raw_candles[target_index]
 
     # Check target validity
-    up = 0
-    down = 0
+    direction = 0
     if last_element.close() < target_element.close():
-        up = 1
+        direction = 1
     else:
-        down = 1
+        direction = -1
 
     x_train.append(scaled_data[from_index:to_index].reshape(1, -1)[0])
-    y_train.append([up, down])
+    y_train.append([scaled_data[target_index:target_index+1][0][0]])
 
 x_train = np.array(x_train)
 y_train = np.array(y_train)
+x_train = np.reshape(x_train, (x_train.shape[0], x_train.shape[1], 1))
+y_train = np.reshape(y_train, (y_train.shape[0], y_train.shape[1], 1))
 
 print(f"x_train shape: {x_train.shape} - y_train shape: {y_train.shape}")
 
@@ -91,20 +92,25 @@ print("Features size: ", len(x_train[0]))
 
 model = Sequential()
 
+model.add(LSTM(units=50, return_sequences=True, input_shape=(x_train.shape[1],1)))
+model.add(Dropout(0.2))
+model.add(LSTM(units=50, return_sequences=True))
+model.add(Dropout(0.2))
+model.add(LSTM(units=50, return_sequences=True))
+model.add(Dropout(0.2))
+model.add(Dense(units=1))
+
+model.compile(optimizer='adam', loss='mean_squared_error', metrics=['accuracy'])
+
+'''
+
+
 model.add(Dense(300, input_shape=(x_train.shape[1],), activation='relu'))
 model.add(Dense(600, activation='relu'))
-model.add(Dense(2, activation='softmax'))
+model.add(Dense(1, activation='softmax'))
 model.compile(optimizer='adam', loss='categorical_crossentropy', metrics=['accuracy'])
-
 '''
 
 
-model.add(Dense(512, input_shape=(x_train.shape[1], 1), activation='relu'))
-model.add(Dense(768, activation='relu'))
-model.add(Dense(2, activation='softmax'))
-model.compile(optimizer='adam', loss='sparse_categorical_crossentropy')
-
-'''
-
-
-model.fit(x_train, y_train, epochs=50, batch_size=32)
+model.fit(x_train, y_train, epochs=5, batch_size=32)
+print(f"x_train shape: {x_train.shape} - y_train shape: {y_train.shape}")
