@@ -37,10 +37,10 @@ class RawCandlesRepository:
             high = row[3]
             low = row[4]
             rsi = row[5]
-            ema50 = row[5]
-            ema200 = row[6]
-            ema800 = row[7]
-            volume = row[8]
+            ema50 = row[6]
+            ema200 = row[7]
+            ema800 = row[8]
+            volume = row[9]
             raw_candle = RawCandle(datetime, open, high, low, close, rsi, ema50, ema200, ema800, volume)
             arr.append(raw_candle)
         return RawCandles(pair, arr)
