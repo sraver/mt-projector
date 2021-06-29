@@ -7,22 +7,6 @@ class RawCandlesRepository:
     def __init__(self, db):
         self.__db = db
 
-    def store(self, pair, timeframe, candles: RawCandles) -> None:
-        for candle in candles.array():
-            datetime = candle.date()
-            open = candle.open()
-            high = candle.high()
-            low = candle.low()
-            close = candle.close()
-            volume = candle.volume()
-
-            self.__db.execute(
-                '''INSERT INTO raw_data(
-                    asset, timeframe, date, open, close, high, low, volume)
-                    VALUES (%s, %s, %s, %s, %s, %s, %s, %s)''',
-                (pair, timeframe, datetime, open, close, high, low, volume)
-            )
-
     def get(self, pair, timeframe) -> RawCandles:
         rs = self.__db.execute(
             '''SELECT datetime, open, close, high, low, rsi, ema50, ema200, ema800, volume FROM test_table

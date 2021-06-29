@@ -1,7 +1,6 @@
 import numpy as np
 from src.Candles.RawToNormalized import RawToNormalized
 from src.Persistence.Database import Database
-from src.Repositories.NormalizedCandlesRepository import NormalizedCandlesRepository
 from src.Repositories.RawCandlesRepository import RawCandlesRepository
 from sklearn.model_selection import train_test_split
 from sklearn import metrics
@@ -12,7 +11,6 @@ timeframe = 15
 
 db = Database()
 raw_candles_repository = RawCandlesRepository(db)
-normal_candles_repository = NormalizedCandlesRepository(db)
 
 # Load raw data
 
