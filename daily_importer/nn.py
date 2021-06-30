@@ -57,7 +57,7 @@ df = pd.DataFrame(
 ) \
     .set_index('time')
 
-# Scale data
+# Normalize data
 
 scaler_prices = MinMaxScaler(feature_range=(0, 1))
 scaled_prices = scaler_prices.fit_transform(df.close.values.reshape(-1, 1)).reshape(1, -1)[0]
@@ -121,17 +121,19 @@ for i in range(period_size, collection_size):
     elif change < change_threshold * -1:
         direction = 2
 
-    x_train.append(current_sequence[:-delay_periods])
-    y_train.append(direction)
+    sequence_array = current_sequence[:-delay_periods] \
+        .to_numpy() \
+        .reshape(1, -1)[0]
 
-exit()
+    x_train.append(sequence_array)
+    y_train.append(direction)
 
 x_train = np.array(x_train)
 y_train = np.array(y_train)
 
 y_train = to_categorical(y_train, 3)
 
-x_train = np.reshape(x_train, (x_train.shape[0], 1, x_train.shape[1]))
+x_train = np.reshape(x_train, (x_train.shape[0], x_train.shape[1], 1))
 # y_train = np.reshape(y_train, (y_train.shape[0], y_train.shape[1], 1))
 
 print(f"x_train shape: {x_train.shape} - y_train shape: {y_train.shape}")
@@ -140,7 +142,7 @@ print(f"x_train shape: {x_train.shape} - y_train shape: {y_train.shape}")
 
 model = Sequential()
 
-model.add(LSTM(units=50, return_sequences=True, input_shape=(x_train.shape[1],)))
+model.add(LSTM(units=50, return_sequences=True, input_shape=(x_train.shape[1:])))
 model.add(Dropout(0.2))
 model.add(LSTM(units=50, return_sequences=True))
 model.add(Dropout(0.2))
