@@ -1,116 +1,164 @@
 import numpy as np
+import pandas as pd
 from tensorflow.keras.models import Sequential
 from tensorflow.keras.layers import LSTM, Dropout, Dense
+from tensorflow.keras.utils import to_categorical
 
+from src.Candles.RawToNormalized import RawToNormalized
 from src.Persistence.Database import Database
-from src.Repositories.NormalizedCandlesRepository import NormalizedCandlesRepository
 from src.Repositories.RawCandlesRepository import RawCandlesRepository
 from sklearn.model_selection import train_test_split
 from sklearn import metrics
 from sklearn.preprocessing import MinMaxScaler
 
-pair = 'ETHUSD'
+pair = 'BTCUSD'
 timeframe = 15
 
 db = Database()
 raw_candles_repository = RawCandlesRepository(db)
-normal_candles_repository = NormalizedCandlesRepository(db)
 
 # Load raw data
 
 raw_candles = raw_candles_repository.get(pair, timeframe)
 
-# Filter data
+converter = RawToNormalized(raw_candles)
+normal_candles = converter.convert()
 
-arr_raw_candles = raw_candles.array()
+arr_normal_candles = normal_candles.array()
 
-prices = []
+# Filter wanted data
+
+times = []
+closes = []
 rsi = []
 ema = []
 
-for row in arr_raw_candles:
-    prices.append(row.close())
+for row in arr_normal_candles:
+    times.append(row.date())
+    closes.append(row.close())
     rsi.append(row.rsi())
     ema.append(row.ema50())
 
+'''
+times = np.array(times).reshape(-1, 1)
 prices = np.array(prices)
 rsi = np.array(rsi)
 ema = np.array(ema)
+'''
 
-# Normalize data
+df = pd.DataFrame(
+    {
+        'time': times,
+        'close': closes,
+        'rsi': rsi,
+        'ema': ema
+    },
+    columns=['time', 'close', 'rsi', 'ema']
+) \
+    .set_index('time')
+
+# Scale data
 
 scaler_prices = MinMaxScaler(feature_range=(0, 1))
-scaled_prices = scaler_prices.fit_transform(prices.reshape(-1, 1))
-scaler_rsi = MinMaxScaler(feature_range=(0, 1))
-scaled_rsi = scaler_rsi.fit_transform(rsi.reshape(-1, 1))
+scaled_prices = scaler_prices.fit_transform(df.close.values.reshape(-1, 1)).reshape(1, -1)[0]
+
 scaler_ema = MinMaxScaler(feature_range=(0, 1))
-scaled_ema = scaler_ema.fit_transform(ema.reshape(-1, 1))
+scaled_ema = scaler_ema.fit_transform(df.ema.values.reshape(-1, 1)).reshape(1, -1)[0]
 
-scaled_data = np.concatenate([scaled_prices, scaled_rsi, scaled_ema], axis=1)
+df.rsi /= 100
 
-# Split to samples
+scaled_df = pd.DataFrame(
+    {
+        'time': times,
+        'close': scaled_prices,
+        'rsi': df.rsi.values,
+        'ema': scaled_ema
+    },
+    columns=['time', 'close', 'rsi', 'ema']
+) \
+    .set_index('time')
 
-batch_size = 10
-delay_size = 4
-price_increment = 0.06
-set_size = len(arr_raw_candles)
+# Generate samples
+
+period_size = 60
+delay_periods = 4
+change_threshold = 0.01
+
+collection_size = len(arr_normal_candles)
 
 x_train, y_train = [], []
 
-for i in range(batch_size, set_size):
-    from_index = i - batch_size
+for i in range(period_size, collection_size):
+    from_index = i - period_size
     to_index = i
-    target_index = to_index + delay_size
-    if target_index >= set_size:
+    target_index = to_index + delay_periods
+    if target_index >= collection_size:
         break
 
-    first_element = arr_raw_candles[from_index]
-    last_element = arr_raw_candles[to_index]
-    target_element = arr_raw_candles[target_index]
+    # Check range completeness
+
+    current_sequence = scaled_df[from_index:target_index]
+    expected_range = pd.date_range(
+        current_sequence.index[0],
+        periods=period_size + delay_periods,
+        freq=f"{timeframe}min"
+    )
+
+    range_has_gaps = expected_range[-1] != current_sequence.index[-1]
+
+    if range_has_gaps:
+        continue
 
     # Check target validity
-    direction = 0
-    if last_element.close() < target_element.close():
-        direction = 1
-    else:
-        direction = -1
 
-    x_train.append(scaled_data[from_index:to_index].reshape(1, -1)[0])
-    y_train.append([scaled_data[target_index:target_index+1][0][0]])
+    change = 0
+    for index in range(to_index + 1, target_index + 1):
+        change = change + arr_normal_candles[index].close()
+
+    direction = 0
+    if change > change_threshold:
+        direction = 1
+    elif change < change_threshold * -1:
+        direction = 2
+
+    x_train.append(current_sequence[:-delay_periods])
+    y_train.append(direction)
+
+exit()
 
 x_train = np.array(x_train)
 y_train = np.array(y_train)
-x_train = np.reshape(x_train, (x_train.shape[0], x_train.shape[1], 1))
-y_train = np.reshape(y_train, (y_train.shape[0], y_train.shape[1], 1))
+
+y_train = to_categorical(y_train, 3)
+
+x_train = np.reshape(x_train, (x_train.shape[0], 1, x_train.shape[1]))
+# y_train = np.reshape(y_train, (y_train.shape[0], y_train.shape[1], 1))
 
 print(f"x_train shape: {x_train.shape} - y_train shape: {y_train.shape}")
-
-print("y train length: ", len(y_train))
-print("Features size: ", len(x_train[0]))
 
 # Create the model
 
 model = Sequential()
 
-model.add(LSTM(units=50, return_sequences=True, input_shape=(x_train.shape[1],1)))
+model.add(LSTM(units=50, return_sequences=True, input_shape=(x_train.shape[1],)))
 model.add(Dropout(0.2))
 model.add(LSTM(units=50, return_sequences=True))
 model.add(Dropout(0.2))
-model.add(LSTM(units=50, return_sequences=True))
+model.add(LSTM(units=50))
 model.add(Dropout(0.2))
-model.add(Dense(units=1))
+model.add(Dense(3, activation='softmax'))
 
 model.compile(optimizer='adam', loss='mean_squared_error', metrics=['accuracy'])
 
 '''
 
+model.add(Dense(100, input_shape=(x_train.shape[1],), activation='relu'))
+model.add(Dense(20, activation='relu'))
+model.add(Dense(3, activation='softmax'))
 
-model.add(Dense(300, input_shape=(x_train.shape[1],), activation='relu'))
-model.add(Dense(600, activation='relu'))
-model.add(Dense(1, activation='softmax'))
 model.compile(optimizer='adam', loss='categorical_crossentropy', metrics=['accuracy'])
 '''
 
+model.fit(x_train, y_train, epochs=10, batch_size=32, validation_split=0.2)
 
-model.fit(x_train, y_train, epochs=5, batch_size=32)
 print(f"x_train shape: {x_train.shape} - y_train shape: {y_train.shape}")

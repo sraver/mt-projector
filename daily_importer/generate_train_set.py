@@ -6,17 +6,14 @@ from sklearn.model_selection import train_test_split
 from sklearn import metrics
 from sklearn.neural_network import MLPRegressor
 
-pair = 'ETHUSD'
+pair = 'BTCUSD'
 timeframe = 15
-
-db = Database()
-raw_candles_repository = RawCandlesRepository(db)
 
 # Load raw data
 
+db = Database()
+raw_candles_repository = RawCandlesRepository(db)
 raw_candles = raw_candles_repository.get(pair, timeframe)
-
-# Convert to differentials
 
 converter = RawToNormalized(raw_candles)
 normal_candles = converter.convert()
@@ -24,8 +21,8 @@ normal_candles = converter.convert()
 arr_normal_candles = normal_candles.array()
 
 batch_size = 10
-delay_size = 4
-price_increment = 0.06
+delay_size = 2
+price_increment = 1
 set_size = len(arr_normal_candles)
 
 print("Total rows: ", set_size)
@@ -52,9 +49,6 @@ for i in range(batch_size, set_size):
     current_row = []
     for j in range(from_index, to_index):
         element = arr_normal_candles[j]
-        current_row.append(element.month_of_year())
-        current_row.append(element.day_of_week())
-        current_row.append(element.hour())
         current_row.append(element.close())
         current_row.append(element.rsi())
         current_row.append(element.ema50())
