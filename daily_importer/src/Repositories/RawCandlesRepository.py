@@ -10,7 +10,7 @@ class RawCandlesRepository:
     def get(self, pair, timeframe) -> RawCandles:
         rs = self.__db.execute(
             '''SELECT datetime, open, close, high, low, rsi, ema50, ema200, ema800, volume FROM test_table
-                WHERE asset = %s AND period = %s''',
+                WHERE asset = %s AND period = %s and YEAR(datetime) <> 2021''',
             (pair, timeframe)
         )
         arr = []

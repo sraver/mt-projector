@@ -14,9 +14,9 @@ from sklearn.preprocessing import MinMaxScaler
 from sklearn.utils import shuffle
 
 pair = 'BTCUSD'
-timeframe = 15
+timeframe = 1
 
-create_sequences = False
+create_sequences = True
 
 if create_sequences:
     db = Database()
@@ -129,18 +129,17 @@ if create_sequences:
     x_train = np.array(x_train)
     y_train = np.array(y_train)
 
-else:
-    from numpy import load
+    np.save(f"x_{pair}_{timeframe}.npy", x_train)
+    np.save(f"y_{pair}_{timeframe}.npy", y_train)
 
-    x_train = load('x.npy')
-    y_train = load('y.npy')
+else:
+    x_train = np.load(f"x_{pair}_{timeframe}.npy")
+    y_train = np.load(f"y_{pair}_{timeframe}.npy")
 
 x_train, y_train = shuffle(x_train, y_train)
 
 y_train = to_categorical(y_train, 3)
-
 x_train = np.reshape(x_train, (x_train.shape[0], x_train.shape[1], 1))
-# y_train = np.reshape(y_train, (y_train.shape[0], y_train.shape[1], 1))
 
 print(f"x_train shape: {x_train.shape} - y_train shape: {y_train.shape}")
 
