@@ -1,7 +1,6 @@
-import numpy as np
-import pandas as pd
+import numpy as np, pandas as pd, time
 from tensorflow.keras.models import Sequential
-from tensorflow.keras.layers import LSTM, Dropout, Dense
+from tensorflow.keras.layers import LSTM, Dropout, Dense, BatchNormalization
 from tensorflow.keras.utils import to_categorical
 from tensorflow.keras.optimizers import Adam
 
@@ -14,9 +13,9 @@ from sklearn.preprocessing import MinMaxScaler
 from sklearn.utils import shuffle
 
 pair = 'BTCUSD'
-timeframe = 1
+timeframe = 15
 
-create_sequences = True
+create_sequences = False
 
 if create_sequences:
     db = Database()
@@ -129,12 +128,15 @@ if create_sequences:
     x_train = np.array(x_train)
     y_train = np.array(y_train)
 
-    np.save(f"x_{pair}_{timeframe}.npy", x_train)
-    np.save(f"y_{pair}_{timeframe}.npy", y_train)
+    np.save(f"samples/x_{pair}_{timeframe}.npy", x_train)
+    np.save(f"samples/y_{pair}_{timeframe}.npy", y_train)
 
 else:
-    x_train = np.load(f"x_{pair}_{timeframe}.npy")
-    y_train = np.load(f"y_{pair}_{timeframe}.npy")
+    x_train = np.load(f"samples/x_{pair}_{timeframe}.npy")
+    y_train = np.load(f"samples/y_{pair}_{timeframe}.npy")
+
+
+
 
 x_train, y_train = shuffle(x_train, y_train)
 
@@ -164,4 +166,6 @@ model.compile(
     metrics=['accuracy']
 )
 
-model.fit(x_train, y_train, epochs=10, batch_size=3, validation_split=0.2)
+model.fit(x_train, y_train, epochs=1, batch_size=3, validation_split=0.1)
+
+model.save(f"models/{pair}_{timeframe}_2.mdl")
