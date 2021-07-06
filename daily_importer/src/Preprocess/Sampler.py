@@ -5,13 +5,34 @@ from sklearn.preprocessing import MinMaxScaler
 
 
 class Sampler:
-
     def __init__(self, period_size=60, delay_periods=4, change_threshold=0.01):
+        self.__check_arguments(period_size, delay_periods, change_threshold)
         self.period_size = period_size
         self.delay_periods = delay_periods
         self.change_threshold = change_threshold
 
-    def sample(self, period, df_source: DataFrame):
+    def __check_arguments(self, period_size, delay_periods, change_threshold):
+        if period_size <= 0:
+            raise Exception('Period length must be greater than zero.')
+        if delay_periods <= 0:
+            raise Exception('Delay periods length must be greater than zero.')
+        if change_threshold <= 0:
+            raise Exception('Change threshold must be greater than zero.')
+
+    def __check_data(self, df: DataFrame):
+        if len(df) < self.period_size + self.delay_periods:
+            raise Exception('Not enough data')
+
+    def __default_relevant_fields(self, fields):
+        if fields is None:
+            return ['close', 'rsi', 'ema50']
+        else:
+            return fields
+
+    def sample(self, period, df_source: DataFrame, relevant_fields=None):
+        self.__check_data(df_source)
+        relevant_fields = self.__default_relevant_fields(relevant_fields)
+
         df_percentiles = self.to_percentiles(df_source)
         df = self.normalize(df_percentiles)
 
@@ -22,14 +43,14 @@ class Sampler:
         for i in range(self.period_size, collection_size):
             # Compute relevant indexes
             from_index = i - self.period_size
-            to_index = i
+            to_index = i - 1
             target_index = to_index + self.delay_periods
 
             if target_index >= collection_size:
                 break  # Out of bounds
 
             # Check range completeness
-            current_sequence = df[from_index:target_index]
+            current_sequence = df[from_index:target_index + 1]
             has_gaps = self.__sequence_has_gaps(current_sequence, period)
 
             if has_gaps:
@@ -37,8 +58,6 @@ class Sampler:
 
             # Check sequence class-type
             direction = self.__sample_direction(df_percentiles, target_index, to_index)
-
-            relevant_fields = ['close', 'rsi', 'ema50']
 
             sequence = current_sequence[:-self.delay_periods][relevant_fields] \
                 .to_numpy() \
@@ -72,7 +91,7 @@ class Sampler:
             periods=self.period_size + self.delay_periods,
             freq=f"{period}min"
         )
-        has_gaps = expected_range[-1] != current_sequence.index[-1]
+        has_gaps = expected_range[-1] != pd.to_datetime(current_sequence.index[-1])
         return has_gaps
 
     @staticmethod
