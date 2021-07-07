@@ -1,6 +1,7 @@
 from unittest import TestCase
 import pandas as pd
 
+from src.Preprocess.BalancedSampler import BalancedSampler
 from src.Preprocess.Sampler import Sampler
 
 
