@@ -115,24 +115,17 @@ class Sampler:
 
         return df
 
-    @staticmethod
-    def normalize(df: DataFrame):
+    def normalize(self, df: DataFrame):
         df = df.copy()
 
-        scaler_close = MinMaxScaler()
-        scaled_close = scaler_close.fit_transform(df['close'].values.reshape(-1, 1))
-        df['close'] = scaled_close
-
-        scaler_ema50 = MinMaxScaler()
-        scaled_ema50 = scaler_ema50.fit_transform(df['ema50'].values.reshape(-1, 1))
-        df['ema50'] = scaled_ema50
-
-        scaler_ema200 = MinMaxScaler()
-        scaled_ema200 = scaler_ema200.fit_transform(df['ema200'].values.reshape(-1, 1))
-        df['ema200'] = scaled_ema200
-
-        scaler_ema800 = MinMaxScaler()
-        scaled_ema800 = scaler_ema800.fit_transform(df['ema800'].values.reshape(-1, 1))
-        df['ema800'] = scaled_ema800
+        df['close'] = self.__scale(df['close'])
+        df['ema50'] = self.__scale(df['ema50'])
+        df['ema200'] = self.__scale(df['ema200'])
+        df['ema800'] = self.__scale(df['ema800'])
 
         return df
+
+    def __scale(self, col):
+        max = 65000
+        min = 3100
+        return (col - min) / (max - min)

@@ -5,6 +5,7 @@ from tensorflow.keras.models import Sequential
 from tensorflow.keras.layers import LSTM, Dropout, Dense
 from tensorflow.keras.utils import to_categorical
 from tensorflow.keras.callbacks import TensorBoard, ModelCheckpoint
+from tensorflow.keras.optimizers import Adam
 
 from src.Persistence.Database import Database
 from src.Preprocess.BalancedSampler import BalancedSampler
@@ -49,17 +50,18 @@ print(f"x_train shape: {x_train.shape} - y_train shape: {y_train.shape}")
 model = Sequential()
 
 model.add(LSTM(units=64, return_sequences=True, input_shape=x_train.shape[1:]))
+model.add(Dropout(0.2))
 
 model.add(LSTM(units=64, return_sequences=True))
+model.add(Dropout(0.2))
 
 model.add(LSTM(units=32))
+model.add(Dropout(0.2))
 
 model.add(Dense(3, activation='softmax'))
 
-opt = tf.keras.optimizers.Adam()
-
 model.compile(
-    optimizer='adam',
+    optimizer=Adam(lr=1e-05),
     loss='categorical_crossentropy',
     metrics=['accuracy']
 )
@@ -72,8 +74,8 @@ checkpoint = ModelCheckpoint(
 
 model.fit(
     x_train, y_train,
-    epochs=10,
-    batch_size=3,
+    epochs=3,
+    batch_size=1000,
     validation_split=0.1,
     callbacks=[tensorboard, checkpoint]
 )

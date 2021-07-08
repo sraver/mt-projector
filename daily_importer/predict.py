@@ -13,8 +13,7 @@ timeframe = 15
 
 # Load raw data
 
-db = Database()
-raw_candles_repository = RawDataRepository(db)
+raw_candles_repository = RawDataRepository(Database())
 df = raw_candles_repository.get(pair, timeframe, '2021-01-01', '2021-07-01')
 
 # Create samples
@@ -25,17 +24,17 @@ x_test, y_test = sampler.sample(timeframe, df)
 
 y_test_original = y_test
 
-y_test = to_categorical(y_test, 3)
 x_test = np.reshape(x_test, (x_test.shape[0], x_test.shape[1], 1))
 
-print(f"x_train shape: {x_test.shape} - y_train shape: {y_test.shape}")
+print(f"x_train shape: {x_test.shape}")
 
 # Predict
 
-model = load_model("models/BTCUSD_15_2.mdl")
+model = load_model("models/RNN_Final-10.model")
 
-y_pred = model.predict(x_test)
+y_pred = model.predict(x_test, batch_size=32)
 y_pred_rounded = np.argmax(y_pred, axis=-1)
+
 
 cm = confusion_matrix(y_test_original, y_pred_rounded)
 
