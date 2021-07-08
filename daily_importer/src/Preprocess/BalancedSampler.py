@@ -26,7 +26,7 @@ class BalancedSampler:
         # Select sequences
         for row in np.c_[x, y]:
             sequence = row[:-1]
-            target = row[-1]
+            target = int(row[-1])
 
             if counter[target] < max_elements:
                 x_final.append(sequence)

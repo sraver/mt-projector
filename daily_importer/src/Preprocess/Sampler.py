@@ -2,6 +2,7 @@ import numpy as np
 import pandas as pd
 from pandas import DataFrame
 from sklearn.preprocessing import MinMaxScaler
+from sklearn.utils import shuffle
 
 
 class Sampler:
@@ -25,7 +26,7 @@ class Sampler:
 
     def __default_relevant_fields(self, fields):
         if fields is None:
-            return ['close', 'rsi', 'ema50']
+            return ['close', 'rsi', 'ema50', 'ema200', 'ema800']
         else:
             return fields
 
@@ -68,6 +69,8 @@ class Sampler:
 
         x = np.array(x)
         y = np.array(y)
+
+        x, y = shuffle(x, y)
 
         return x, y
 
@@ -123,5 +126,13 @@ class Sampler:
         scaler_ema50 = MinMaxScaler()
         scaled_ema50 = scaler_ema50.fit_transform(df['ema50'].values.reshape(-1, 1))
         df['ema50'] = scaled_ema50
+
+        scaler_ema200 = MinMaxScaler()
+        scaled_ema200 = scaler_ema200.fit_transform(df['ema200'].values.reshape(-1, 1))
+        df['ema200'] = scaled_ema200
+
+        scaler_ema800 = MinMaxScaler()
+        scaled_ema800 = scaler_ema800.fit_transform(df['ema800'].values.reshape(-1, 1))
+        df['ema800'] = scaled_ema800
 
         return df

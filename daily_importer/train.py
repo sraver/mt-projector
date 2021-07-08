@@ -1,16 +1,21 @@
 import numpy as np
+import time
+import tensorflow as tf
 from tensorflow.keras.models import Sequential
 from tensorflow.keras.layers import LSTM, Dropout, Dense
 from tensorflow.keras.utils import to_categorical
+from tensorflow.keras.callbacks import TensorBoard, ModelCheckpoint
 
 from src.Persistence.Database import Database
+from src.Preprocess.BalancedSampler import BalancedSampler
 from src.Repositories.RawDataRepository import RawDataRepository
-from sklearn.utils import shuffle
 
 from src.Preprocess.Sampler import Sampler
 
 pair = 'BTCUSD'
 timeframe = 15
+
+NAME = f"{pair}_{timeframe}_{time.time()}"
 
 create_sequences = True
 
@@ -20,20 +25,19 @@ if create_sequences:
 
     # Load raw data
 
-    df = raw_candles_repository.get(pair, timeframe)
+    df = raw_candles_repository.get(pair, timeframe, '2019-01-01', '2021-01-01')
 
-    sampler = Sampler()
+    # sampler = BalancedSampler(Sampler())  # 11961
+    sampler = Sampler()  # 63264
 
     x_train, y_train = sampler.sample(timeframe, df)
 
-    np.save(f"samples/x_{pair}_{timeframe}.npy", x_train)
-    np.save(f"samples/y_{pair}_{timeframe}.npy", y_train)
+    np.save(f"samples/x_{NAME}.npy", x_train)
+    np.save(f"samples/y_{NAME}.npy", y_train)
 
 else:
-    x_train = np.load(f"samples/x_{pair}_{timeframe}.npy")
-    y_train = np.load(f"samples/y_{pair}_{timeframe}.npy")
-
-x_train, y_train = shuffle(x_train, y_train)
+    x_train = np.load(f"samples/x_{NAME}.npy")
+    y_train = np.load(f"samples/y_{NAME}.npy")
 
 y_train = to_categorical(y_train, 3)
 x_train = np.reshape(x_train, (x_train.shape[0], x_train.shape[1], 1))
@@ -44,16 +48,15 @@ print(f"x_train shape: {x_train.shape} - y_train shape: {y_train.shape}")
 
 model = Sequential()
 
-model.add(LSTM(units=128, return_sequences=True, input_shape=x_train.shape[1:]))
-model.add(Dropout(0.2))
+model.add(LSTM(units=64, return_sequences=True, input_shape=x_train.shape[1:]))
 
-model.add(LSTM(units=128, return_sequences=True))
-model.add(Dropout(0.2))
+model.add(LSTM(units=64, return_sequences=True))
 
-model.add(LSTM(units=64))
-model.add(Dropout(0.2))
+model.add(LSTM(units=32))
 
 model.add(Dense(3, activation='softmax'))
+
+opt = tf.keras.optimizers.Adam()
 
 model.compile(
     optimizer='adam',
@@ -61,6 +64,16 @@ model.compile(
     metrics=['accuracy']
 )
 
-model.fit(x_train, y_train, epochs=1, batch_size=3, validation_split=0.1)
+tensorboard = TensorBoard(log_dir=f"logs/{NAME}")
 
-model.save(f"models/{pair}_{timeframe}_2.mdl")
+filepath = "RNN_Final-{epoch:02d}"
+checkpoint = ModelCheckpoint(
+    "models/{}.model".format(filepath, monitor="val_acc", verbose=1, save_best_only=True, mode='max'))
+
+model.fit(
+    x_train, y_train,
+    epochs=10,
+    batch_size=3,
+    validation_split=0.1,
+    callbacks=[tensorboard, checkpoint]
+)
