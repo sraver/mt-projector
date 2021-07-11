@@ -1,5 +1,6 @@
 import numpy as np
 import time
+import sys
 import tensorflow as tf
 from tensorflow.keras.models import Sequential
 from tensorflow.keras.layers import LSTM, Dropout, Dense
@@ -13,36 +14,41 @@ from src.Repositories.RawDataRepository import RawDataRepository
 
 from src.Preprocess.Sampler import Sampler
 
-pair = 'BTCUSD'
-timeframe = 15
+if len(sys.argv) < 6:
+    print("Missing arguments!")
+    exit()
 
-NAME = f"{pair}_{timeframe}_{time.time()}"
+pair = sys.argv[1]
+timeframe = sys.argv[2]
+from_date = sys.argv[3]
+to_date = sys.argv[4]
+name = sys.argv[5]
 
 create_sequences = True
+
+samples_name = f"{pair}_{timeframe}.npy"
 
 if create_sequences:
     raw_candles_repository = RawDataRepository(Database())
 
     # Load raw data
 
-    df = raw_candles_repository.get(pair, timeframe, '2019-01-01', '2021-01-01')
+    df = raw_candles_repository.get(pair, timeframe, from_date, to_date)
 
-    # sampler = BalancedSampler(Sampler())  # 11961
-    sampler = Sampler()  # 63264
+    sampler = BalancedSampler(Sampler())
+    # sampler = Sampler()
 
     x_train, y_train = sampler.sample(timeframe, df)
 
-    np.save(f"samples/x_{pair}_{timeframe}.npy", x_train)
-    np.save(f"samples/y_{pair}_{timeframe}.npy", y_train)
+    np.save(f"samples/x_{samples_name}", x_train)
+    np.save(f"samples/y_{samples_name}", y_train)
 
 else:
-    x_train = np.load(f"samples/x_{pair}_{timeframe}.npy")
-    y_train = np.load(f"samples/y_{pair}_{timeframe}.npy")
+    x_train = np.load(f"samples/x_{samples_name}")
+    y_train = np.load(f"samples/y_{samples_name}")
 
 y_train = to_categorical(y_train, 3)
 x_train = np.reshape(x_train, (x_train.shape[0], x_train.shape[1], 1))
-
-print(f"x_train shape: {x_train.shape} - y_train shape: {y_train.shape}")
 
 # Create the model
 
@@ -60,21 +66,21 @@ model.add(Dropout(0.2))
 model.add(Dense(3, activation='softmax'))
 
 model.compile(
-    optimizer=Adam(learning_rate=1e-05),
+    optimizer=Adam(learning_rate=1e-06),
     loss='categorical_crossentropy',
     metrics=['accuracy']
 )
 
-tensorboard = TensorBoard(log_dir=f"logs/{NAME}")
-
-filepath = "RNN_Final-{epoch:02d}"
+tensorboard = TensorBoard(log_dir=f"logs/{name}")
 checkpoint = ModelCheckpoint(
-    "models/{}.model".format(filepath, monitor="val_acc", verbose=1, save_best_only=True, mode='max'))
+    "models/{}.model".format(name, monitor="val_acc", verbose=1, save_best_only=True, mode='max'))
+
+print(f"x_train shape: {x_train.shape} - y_train shape: {y_train.shape}")
 
 model.fit(
     x_train, y_train,
     epochs=3,
-    batch_size=1000,
+    batch_size=10,
     validation_split=0.1,
     callbacks=[tensorboard, checkpoint]
 )

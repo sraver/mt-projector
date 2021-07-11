@@ -1,6 +1,6 @@
+import sys
 import numpy as np
 from tensorflow.keras.models import load_model
-from tensorflow.keras.utils import to_categorical
 from src.Persistence.Database import Database
 from src.Repositories.RawDataRepository import RawDataRepository
 from sklearn.metrics import ConfusionMatrixDisplay
@@ -8,13 +8,20 @@ from sklearn.metrics import confusion_matrix
 import matplotlib.pyplot as plt
 from src.Preprocess.Sampler import Sampler
 
-pair = 'BTCUSD'
-timeframe = 15
+if len(sys.argv) < 6:
+    print("Missing arguments!")
+    exit()
+
+pair = sys.argv[1]
+timeframe = sys.argv[2]
+from_date = sys.argv[3]
+to_date = sys.argv[4]
+name = sys.argv[5]
 
 # Load raw data
 
 raw_candles_repository = RawDataRepository(Database())
-df = raw_candles_repository.get(pair, timeframe, '2021-01-01', '2021-07-01')
+df = raw_candles_repository.get(pair, timeframe, from_date, to_date)
 
 # Create samples
 
@@ -30,11 +37,10 @@ print(f"x_train shape: {x_test.shape}")
 
 # Predict
 
-model = load_model("models/RNN_Final-10.model")
+model = load_model(f"models/{name}.model")
 
-y_pred = model.predict(x_test, batch_size=32)
+y_pred = model.predict(x_test, batch_size=10)
 y_pred_rounded = np.argmax(y_pred, axis=-1)
-
 
 cm = confusion_matrix(y_test_original, y_pred_rounded)
 
