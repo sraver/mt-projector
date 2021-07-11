@@ -1,7 +1,6 @@
 import numpy as np
 import pandas as pd
 from pandas import DataFrame
-from sklearn.preprocessing import MinMaxScaler
 from sklearn.utils import shuffle
 
 

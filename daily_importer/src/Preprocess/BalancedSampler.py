@@ -1,6 +1,6 @@
 import numpy as np
 from pandas import DataFrame
-
+from sklearn.utils import shuffle
 from src.Preprocess.Sampler import Sampler
 
 
@@ -35,5 +35,7 @@ class BalancedSampler:
 
         x_final = np.array(x_final)
         y_final = np.array(y_final)
+
+        x_final, y_final = shuffle(x_final, y_final)
 
         return x_final, y_final

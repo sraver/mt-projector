@@ -21,8 +21,7 @@ NAME = f"{pair}_{timeframe}_{time.time()}"
 create_sequences = True
 
 if create_sequences:
-    db = Database()
-    raw_candles_repository = RawDataRepository(db)
+    raw_candles_repository = RawDataRepository(Database())
 
     # Load raw data
 
@@ -33,12 +32,12 @@ if create_sequences:
 
     x_train, y_train = sampler.sample(timeframe, df)
 
-    np.save(f"samples/x_{NAME}.npy", x_train)
-    np.save(f"samples/y_{NAME}.npy", y_train)
+    np.save(f"samples/x_{pair}_{timeframe}.npy", x_train)
+    np.save(f"samples/y_{pair}_{timeframe}.npy", y_train)
 
 else:
-    x_train = np.load(f"samples/x_{NAME}.npy")
-    y_train = np.load(f"samples/y_{NAME}.npy")
+    x_train = np.load(f"samples/x_{pair}_{timeframe}.npy")
+    y_train = np.load(f"samples/y_{pair}_{timeframe}.npy")
 
 y_train = to_categorical(y_train, 3)
 x_train = np.reshape(x_train, (x_train.shape[0], x_train.shape[1], 1))
@@ -61,7 +60,7 @@ model.add(Dropout(0.2))
 model.add(Dense(3, activation='softmax'))
 
 model.compile(
-    optimizer=Adam(lr=1e-05),
+    optimizer=Adam(learning_rate=1e-05),
     loss='categorical_crossentropy',
     metrics=['accuracy']
 )
